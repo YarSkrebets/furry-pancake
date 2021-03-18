@@ -4,6 +4,7 @@ import com.itmo.java.basics.logic.DatabaseRecord;
 import com.itmo.java.basics.logic.WritableDatabaseRecord;
 
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
@@ -20,9 +21,30 @@ public class DatabaseInputStream extends DataInputStream {
 
     /**
      * Читает следующую запись (см {@link DatabaseOutputStream#write(WritableDatabaseRecord)})
+     *
      * @return следующую запись, если она существует. {@link Optional#empty()} - если конец файла достигнут
      */
     public Optional<DatabaseRecord> readDbUnit() throws IOException {
-        return null;
+        int keySize = 0;
+        try {
+            keySize = readInt();
+        } catch (EOFException e) {
+            return Optional.empty();
+        }
+
+        byte[] buffer = new byte[keySize];
+        super.readFully(buffer);
+        byte[] key = buffer;
+
+        int valueSize = readInt();
+        byte[] value = null;
+        if (valueSize > 0) {
+            buffer = new byte[valueSize];
+            super.readFully(buffer);
+            value = buffer;
+        }
+
+        return Optional.of(DatabaseRecord.createConstantRecord(key, value));
     }
+
 }
